@@ -21,7 +21,7 @@ This tool automatically retrieves the latest Common Vulnerabilities and Exposure
 Install required libraries with:
 
 ```bash
-pip install nvdlib pandas openpyxl iocextract
+pip install -r requirements.txt
 ```
 
 

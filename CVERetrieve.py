@@ -16,6 +16,19 @@ pubEndDate = now.strftime("%Y-%m-%d %H:%M")
 print(f"Fetching CVEs published from {pubStartDate} to {pubEndDate}")
 results = nvdlib.searchCVE(pubStartDate=pubStartDate, pubEndDate=pubEndDate)
 
+# Characters that Excel/LibreOffice treat as the start of a formula/DDE
+# expression. CVE descriptions and derived IOCs come from an external,
+# untrusted source, so any value beginning with one of these must be
+# neutralized before it reaches a spreadsheet cell (CSV/Excel formula
+# injection, CWE-1236).
+FORMULA_TRIGGER_CHARS = ('=', '+', '-', '@', '\t', '\r')
+
+
+def sanitize_for_spreadsheet(value):
+    if isinstance(value, str) and value.startswith(FORMULA_TRIGGER_CHARS):
+        return "'" + value
+    return value
+
 
 data = []
 for cve in results:
@@ -27,7 +40,11 @@ for cve in results:
     iocs.update(iocextract.extract_urls(description))
     iocs.update(iocextract.extract_hashes(description))
     ioc_str = ', '.join(iocs) if iocs else 'None'
-    data.append({'CVE ID': cve_id, 'Description': description, 'IOCs': ioc_str, 'Raw': cve})
+    data.append({
+        'CVE ID': cve_id,
+        'Description': sanitize_for_spreadsheet(description),
+        'IOCs': sanitize_for_spreadsheet(ioc_str),
+    })
 
 # Create DataFrame
 df = pd.DataFrame(data)
